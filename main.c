@@ -1,35 +1,47 @@
 #include "monty.h"
 
-/**
- * main - main function to create an interpreter Monty ByteCodes files
- * @argc: arg count
- * @argv: args
- * Return: always 0
- */
-int main(int argc, char **argv)
-{
-	char *buffer;
-	FILE *fd;
-	int line = 0;
-	size_t l = 1024, gt = 0;
-	stack_t *a = NULL;
-	global_t gl;
+vars var;
 
-	gl.mode = 's';
-	if (argc != 2)
-		erroargv();
-	fd = read_textfile(argv[1]);
-	buffer = malloc(1024);
-	while (1)
+/**
+ * main - Start LIFO, FILO program
+ * @ac: Number of arguments
+ * @av: Pointer containing arguments
+ * Return: 0 Success, 1 Failed
+ */
+int main(int ac, char **av)
+{
+	char *opcode;
+
+	if (ac != 2)
 	{
-		gt = getline(&buffer, &l, fd);
-		if (gt == (size_t) -1)
-			break;
-		line++;
-		buffer[gt - 1] = '\0';
-		if (isEmpty(buffer) == 0 && buffer[0] != '\0')
-			get_command(buffer, line, &a, fd);
+		fprintf(stderr, "USAGE: monty file\n");
+		return (EXIT_FAILURE);
 	}
-	free(buffer), free_list(a), fclose(fd);
-	return (0);
+
+	if (start_vars(&var) != 0)
+		return (EXIT_FAILURE);
+
+	var.file = fopen(av[1], "r");
+	if (!var.file)
+	{
+		fprintf(stderr, "Error: Can't open file %s\n", av[1]);
+		free_all();
+		return (EXIT_FAILURE);
+	}
+
+	while (getline(&var.buff, &var.tmp, var.file) != EOF)
+	{
+		opcode = strtok(var.buff, " \r\t\n");
+		if (opcode != NULL)
+			if (call_funct(&var, opcode) == EXIT_FAILURE)
+			{
+				free_all();
+				return (EXIT_FAILURE);
+			}
+		var.line_number++;
+	}
+
+	free_all();
+
+	return (EXIT_SUCCESS);
 }
